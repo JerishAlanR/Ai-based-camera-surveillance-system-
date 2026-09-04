@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="Privacy-preserving browser-based AI boundary surveillance demo.">
+      <title>AI Boundary Surveillance</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+<body>
+    <header class="topbar">
+          <div>
+                  <p class="eyebrow">BROWSER-BASED SECURITY DEMO</p>p>
+                  <h1>AI Boundary Surveillance</h1>
+                <p class="subtitle">Real-time person and vehicle detection with a configurable virtual boundary.</p>p>
+          </div>
+        <div class="privacy-note">Local browser processing<br><span>No video is uploaded</span></div>
+    </header>header>
+
+  <main class="layout">
+      <section class="stage-panel">
+            <div class="stage-header">
+                    <div>
+                              <h2>Live camera</h2>
+                              <p id="statusText" class="status">Click Start camera to begin.</p>p>
+                    </div>
+                    <div class="controls">
+                              <button id="startButton" class="button primary">Start camera</button>button>
+                              <button id="stopButton" class="button secondary" disabled>Stop</button>button>
+                    </div>
+            </div>
+      
+            <div id="stage" class="stage">
+                    <video id="video" autoplay playsinline muted></video>video>
+                    <canvas id="overlay"></canvas>canvas>
+                    <div id="stageMessage" class="stage-message">Camera preview will appear here.</div>
+            </div>
+      
+            <div class="stage-footer">
+                    <p><strong>Boundary:</strong> click two points on the video to set the start and end points.</p>
+                    <button id="resetBoundaryButton" class="text-button">Reset boundary</button>button>
+            </div>
+      </section>section>
+  
+      <aside class="side-panel">
+            <section class="summary-block">
+                    <p class="eyebrow">SYSTEM STATUS</p>
+                    <div class="status-row"><span>Model</span><strong id="modelStatus">Not loaded</strong></div>
+                    <div class="status-row"><span>Camera</span><strong id="cameraStatus">Stopped</strong></div>
+                    <div class="status-row"><span>Boundary</span><strong id="boundaryStatus">Configured</strong></div>
+            </section>section>
+      
+            <section class="summary-block counts">
+                    <p class="eyebrow">LIVE COUNTS</p>
+                    <div class="count-grid">
+                              <div><strong id="peopleCount">0</strong><span>People</span></div>
+                              <div><strong id="carsCount">0</strong><span>Cars</span></div>
+                              <div><strong id="objectCount">0</strong><span>Objects</span></div>
+                    </div>
+            </section>section>
+      
+            <section class="summary-block">
+                    <p class="eyebrow">DETECTION SETTINGS</p>
+                    <label for="confidenceRange">Confidence: <span id="confidenceValue">55%</span></label>label>
+                    <input id="confidenceRange" type="range" min="25" max="90" value="55">
+                    <p class="hint">Higher values reduce weak detections but may miss distant objects.</p>
+            </section>section>
+      
+            <section class="summary-block latest-event">
+                    <p class="eyebrow">LATEST CROSSING</p>
+                    <p id="latestEvent">No boundary crossing recorded.</p>
+            </section>section>
+      
+            <section class="summary-block event-block">
+                    <div class="event-heading">
+                              <p class="eyebrow">LOCAL EVENT LOG</p>
+                              <button id="downloadButton" class="text-button" disabled>Download CSV</button>button>
+                    </div>
+                    <div class="event-table-wrap">
+                              <table>
+                                            <thead><tr><th>Time</th><th>Type</th><th>ID</th><th>Direction</th></tr></thead>
+                                          <tbody id="eventRows"><tr><td colspan="4" class="empty">No events yet.</td>td></tr></tbody>tbody>
+                              </table>
+                    </div>
+            </section>section>
+      </aside>aside>
+  </main>main>
+
+  <footer class="footer">
+      <span>Privacy mode: no facial recognition, no identity tracking.</span>
+      <span>For testing and demonstration; verify alerts before real-world use.</span>
+  </footer>footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>html></tr></th></th></tr></thead>
+                              </table></strong></p></span></h1>
+          </div>
+</body></title>
+  </head>
