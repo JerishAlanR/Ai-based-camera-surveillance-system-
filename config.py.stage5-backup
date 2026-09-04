@@ -1,0 +1,23 @@
+"""
+Configuration settings for AI Boundary Surveillance.
+Edit values here instead of digging through the other files.
+"""
+
+# --- Camera settings ---
+CAMERA_INDEX = 0  # change to 1 or 2 if 0 doesn't work
+
+# --- Detection settings ---
+MODEL_PATH = "yolov8n.pt"
+CONFIDENCE_THRESHOLD = 0.4
+TARGET_CLASSES = ["person", "car"]
+
+# --- Boundary line settings ---
+BOUNDARY_START = (330, 30)
+BOUNDARY_END = (330, 300)
+BOUNDARY_COLOR = (0, 0, 255)   # red, in BGR format
+BOUNDARY_THICKNESS = 5
+
+# --- Crossing alert display settings ---
+# How many seconds an on-screen "BOUNDARY CROSSED" message stays visible.
+CROSSING_MESSAGE_DURATION = 2.0
+CROSSING_TEXT_COLOR = (0, 0, 255)  # red
