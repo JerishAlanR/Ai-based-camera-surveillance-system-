@@ -47,6 +47,8 @@
             </div>
             <div class="control-group">
               <button class="button primary" id="startButton">Start camera</button>
+              <button class="button ghost" id="sampleButton">Test footage</button>
+              <label class="button ghost file-button">Load video<input id="footageInput" type="file" accept="video/*" hidden /></label>
               <button class="button ghost" id="stopButton" disabled>Stop</button>
             </div>
           </div>
@@ -62,6 +64,7 @@
           </div>
           <div class="camera-toolbar">
             <div class="area-instruction"><span class="number-step">1</span><span id="boundaryHint">Start the camera, then tap four corners to create an area.</span></div>
+            <span id="sourceStatus" class="source-status">Source: camera</span>
             <button class="text-button" id="resetBoundaryButton">Reset area</button>
           </div>
         </article>
