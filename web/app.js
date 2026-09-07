@@ -3,7 +3,7 @@ const SUPABASE_KEY = 'sb_publishable_kOZID4TW1W2Th8tbhhIAzw_cftNTcVC';
 const RETENTION_MS = 60 * 24 * 60 * 60 * 1000;
 const COCO_TARGETS = new Set(['person', 'car', 'truck', 'bus', 'motorcycle', 'bicycle']);
 const VEHICLES = new Set(['car', 'truck', 'bus', 'motorcycle', 'bicycle']);
-const SAMPLE_FOOTAGE_URL = 'https://raw.githubusercontent.com/intel-iot-devkit/sample-videos/master/person-bicycle-car-detection.mp4';
+const SAMPLE_FOOTAGE_URL = 'https://lorem.video/480p_h264_10s.mp4';
 
 const $ = (id) => document.getElementById(id);
 const video = $('video');
@@ -497,10 +497,11 @@ function beginMonitoring(cameraLabel, badgeLabel, message) {
   processFrame();
 }
 
-async function startFootage(url, label) {
+async function startFootage(url, label, ownedUrl = null) {
   try {
     await loadModel();
     await stopCamera(true);
+    sourceObjectUrl = ownedUrl;
     sourceMode = 'footage';
     sourceStatus.textContent = `Source: ${label}`;
     video.srcObject = null;
@@ -524,9 +525,8 @@ function loadOnlineSample() {
 
 function loadLocalFootage(file) {
   if (!file) return;
-  if (sourceObjectUrl) URL.revokeObjectURL(sourceObjectUrl);
-  sourceObjectUrl = URL.createObjectURL(file);
-  startFootage(sourceObjectUrl, file.name);
+  const objectUrl = URL.createObjectURL(file);
+  startFootage(objectUrl, file.name, objectUrl);
 }
 
 async function stopCamera(silent = false) {
