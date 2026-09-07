@@ -3,7 +3,6 @@ const SUPABASE_KEY = 'sb_publishable_kOZID4TW1W2Th8tbhhIAzw_cftNTcVC';
 const RETENTION_MS = 60 * 24 * 60 * 60 * 1000;
 const COCO_TARGETS = new Set(['person', 'car', 'truck', 'bus', 'motorcycle', 'bicycle']);
 const VEHICLES = new Set(['car', 'truck', 'bus', 'motorcycle', 'bicycle']);
-const SAMPLE_FOOTAGE_URL = 'https://lorem.video/480p_h264_10s.mp4';
 
 const $ = (id) => document.getElementById(id);
 const video = $('video');
@@ -12,11 +11,8 @@ const stage = $('stage');
 const stageMessage = $('stageMessage');
 const statusText = $('statusText');
 const startButton = $('startButton');
-const sampleButton = $('sampleButton');
-const footageInput = $('footageInput');
 const stopButton = $('stopButton');
 const resetBoundaryButton = $('resetBoundaryButton');
-const sourceStatus = $('sourceStatus');
 const modelStatus = $('modelStatus');
 const cameraStatus = $('cameraStatus');
 const boundaryStatus = $('boundaryStatus');
@@ -43,8 +39,6 @@ const ctx = overlay.getContext('2d');
 
 let model = null;
 let stream = null;
-let sourceMode = 'camera';
-let sourceObjectUrl = null;
 let running = false;
 let animationFrame = null;
 let detectionBusy = false;
@@ -267,17 +261,12 @@ function assignTracks(detections) {
 
 function captureFrame() {
   if (!video.videoWidth || !video.videoHeight) return null;
-  try {
-    const frame = document.createElement('canvas');
-    const maxWidth = 960;
-    const scale = Math.min(1, maxWidth / video.videoWidth);
-    frame.width = Math.round(video.videoWidth * scale); frame.height = Math.round(video.videoHeight * scale);
-    frame.getContext('2d').drawImage(video, 0, 0, frame.width, frame.height);
-    return frame.toDataURL('image/jpeg', .72);
-  } catch (error) {
-    console.warn('Frame capture unavailable for this source', error);
-    return null;
-  }
+  const frame = document.createElement('canvas');
+  const maxWidth = 960;
+  const scale = Math.min(1, maxWidth / video.videoWidth);
+  frame.width = Math.round(video.videoWidth * scale); frame.height = Math.round(video.videoHeight * scale);
+  frame.getContext('2d').drawImage(video, 0, 0, frame.width, frame.height);
+  return frame.toDataURL('image/jpeg', .72);
 }
 
 function newSession(object) {
@@ -469,93 +458,34 @@ async function startCamera() {
   try {
     await loadModel();
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access is not available in this browser');
-    await stopCamera(true);
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-    sourceMode = 'camera';
-    sourceStatus.textContent = 'Source: camera';
     video.srcObject = stream;
     await video.play();
-    beginMonitoring('Connected', 'LIVE', 'Monitoring locally in your browser.');
+    updateCanvasSize();
+    resetBoundary();
+    running = true;
+    cameraStatus.textContent = 'Connected'; cameraBadge.textContent = 'LIVE';
+    setStatus('Monitoring locally in your browser.', 'running');
+    stageMessage.hidden = true; startButton.disabled = true; stopButton.disabled = false;
+    processFrame();
   } catch (error) {
     console.error(error); modelStatus.textContent = model ? 'Ready' : 'Unavailable'; cameraStatus.textContent = 'Unavailable'; cameraBadge.textContent = 'BLOCKED';
     setStatus(`Camera could not start: ${error.message}`, 'error'); stageMessage.hidden = false; stageMessage.innerHTML = '<span class="empty-camera-icon">!</span><strong>Camera access is needed</strong><small>Allow camera access in your browser, then try again.</small>';
   }
 }
 
-function beginMonitoring(cameraLabel, badgeLabel, message) {
-  updateCanvasSize();
-  resetBoundary();
-  running = true;
-  cameraStatus.textContent = cameraLabel;
-  cameraBadge.textContent = badgeLabel;
-  setStatus(message, 'running');
-  stageMessage.hidden = true;
-  startButton.disabled = true;
-  sampleButton.disabled = true;
-  footageInput.disabled = true;
-  stopButton.disabled = false;
-  processFrame();
-}
-
-async function startFootage(url, label, ownedUrl = null) {
-  try {
-    await loadModel();
-    await stopCamera(true);
-    sourceObjectUrl = ownedUrl;
-    sourceMode = 'footage';
-    sourceStatus.textContent = `Source: ${label}`;
-    video.srcObject = null;
-    video.crossOrigin = 'anonymous';
-    video.src = url;
-    video.loop = true;
-    video.muted = true;
-    await video.play();
-    beginMonitoring('Footage loaded', 'TEST', `Analyzing ${label} through the same browser AI pipeline.`);
-  } catch (error) {
-    console.error(error);
-    setStatus(`Footage could not start: ${error.message}`, 'error');
-    stageMessage.hidden = false;
-    stageMessage.innerHTML = '<span class="empty-camera-icon">!</span><strong>Footage could not load</strong><small>Try the sample again or load a local MP4 file.</small>';
-  }
-}
-
-function loadOnlineSample() {
-  startFootage(SAMPLE_FOOTAGE_URL, 'online sample');
-}
-
-function loadLocalFootage(file) {
-  if (!file) return;
-  const objectUrl = URL.createObjectURL(file);
-  startFootage(objectUrl, file.name, objectUrl);
-}
-
-async function stopCamera(silent = false) {
+async function stopCamera() {
   running = false;
   if (animationFrame) cancelAnimationFrame(animationFrame);
   if (stream) stream.getTracks().forEach((track) => track.stop());
-  stream = null;
-  video.pause();
-  video.srcObject = null;
+  stream = null; video.srcObject = null;
   for (const session of activeSessions.values()) {
-    session.exitedAt = new Date().toISOString();
-    session.dwellSeconds = Math.max(0, Math.round((new Date(session.exitedAt) - new Date(session.enteredAt)) / 1000));
-    session.exitSnapshotData = captureFrame();
-    session.status = 'complete';
-    await persistEvent(session);
+    session.exitedAt = new Date().toISOString(); session.dwellSeconds = Math.max(0, Math.round((new Date(session.exitedAt) - new Date(session.enteredAt)) / 1000)); session.exitSnapshotData = captureFrame(); session.status = 'complete'; await persistEvent(session);
   }
-  activeSessions.clear();
-  previousDetections = [];
-  if (sourceMode === 'footage') video.removeAttribute('src');
-  if (sourceObjectUrl) { URL.revokeObjectURL(sourceObjectUrl); sourceObjectUrl = null; }
-  cameraStatus.textContent = 'Stopped'; cameraBadge.textContent = 'STANDBY';
-  startButton.disabled = false; sampleButton.disabled = false; footageInput.disabled = false; stopButton.disabled = true;
-  sourceStatus.textContent = 'Source: camera';
-  if (!silent) {
-    stageMessage.hidden = false;
-    stageMessage.innerHTML = '<span class="empty-camera-icon">⌁</span><strong>Camera preview will appear here</strong><small>Allow camera access to begin monitoring.</small>';
-    setStatus('Camera stopped.', '');
-  }
-  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  activeSessions.clear(); previousDetections = [];
+  cameraStatus.textContent = 'Stopped'; cameraBadge.textContent = 'STANDBY'; startButton.disabled = false; stopButton.disabled = true;
+  stageMessage.hidden = false; stageMessage.innerHTML = '<span class="empty-camera-icon">⌁</span><strong>Camera preview will appear here</strong><small>Allow camera access to begin monitoring.</small>';
+  setStatus('Camera stopped.', ''); ctx.clearRect(0, 0, overlay.width, overlay.height);
 }
 
 function downloadCsv() {
@@ -575,9 +505,7 @@ eventRows.addEventListener('click', (event) => { const button = event.target.clo
 closeEvidenceButton.addEventListener('click', () => evidenceDialog.close());
 evidenceDialog.addEventListener('click', (event) => { if (event.target === evidenceDialog) evidenceDialog.close(); });
 startButton.addEventListener('click', async () => { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {}); await startCamera(); });
-sampleButton.addEventListener('click', loadOnlineSample);
-footageInput.addEventListener('change', (event) => loadLocalFootage(event.target.files?.[0]));
-stopButton.addEventListener('click', () => stopCamera(false));
+stopButton.addEventListener('click', stopCamera);
 resetBoundaryButton.addEventListener('click', resetBoundary);
 refreshReportButton.addEventListener('click', loadReports);
 confidenceRange.addEventListener('input', () => { confidenceValue.textContent = `${confidenceRange.value}%`; });
