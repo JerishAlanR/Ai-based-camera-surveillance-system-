@@ -1,102 +1,130 @@
 <!doctype html>
 <html lang="en">
-  <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="Privacy-preserving browser-based AI boundary surveillance demo.">
-      <title>AI Boundary Surveillance</title>
-    <link rel="stylesheet" href="./styles.css">
-  </head>
-<body>
-    <header class="topbar">
-          <div>
-                  <p class="eyebrow">BROWSER-BASED SECURITY DEMO</p>p>
-                  <h1>AI Boundary Surveillance</h1>
-                <p class="subtitle">Real-time person and vehicle detection with a configurable virtual boundary.</p>p>
-          </div>
-        <div class="privacy-note">Local browser processing<br><span>No video is uploaded</span></div>
-    </header>header>
-
-  <main class="layout">
-      <section class="stage-panel">
-            <div class="stage-header">
-                    <div>
-                              <h2>Live camera</h2>
-                              <p id="statusText" class="status">Click Start camera to begin.</p>p>
-                    </div>
-                    <div class="controls">
-                              <button id="startButton" class="button primary">Start camera</button>button>
-                              <button id="stopButton" class="button secondary" disabled>Stop</button>button>
-                    </div>
-            </div>
-      
-            <div id="stage" class="stage">
-                    <video id="video" autoplay playsinline muted></video>video>
-                    <canvas id="overlay"></canvas>canvas>
-                    <div id="stageMessage" class="stage-message">Camera preview will appear here.</div>
-            </div>
-      
-            <div class="stage-footer">
-                    <p><strong>Boundary:</strong> click two points on the video to set the start and end points.</p>
-                    <button id="resetBoundaryButton" class="text-button">Reset boundary</button>button>
-            </div>
-      </section>section>
-  
-      <aside class="side-panel">
-            <section class="summary-block">
-                    <p class="eyebrow">SYSTEM STATUS</p>
-                    <div class="status-row"><span>Model</span><strong id="modelStatus">Not loaded</strong></div>
-                    <div class="status-row"><span>Camera</span><strong id="cameraStatus">Stopped</strong></div>
-                    <div class="status-row"><span>Boundary</span><strong id="boundaryStatus">Configured</strong></div>
-            </section>section>
-      
-            <section class="summary-block counts">
-                    <p class="eyebrow">LIVE COUNTS</p>
-                    <div class="count-grid">
-                              <div><strong id="peopleCount">0</strong><span>People</span></div>
-                              <div><strong id="carsCount">0</strong><span>Cars</span></div>
-                              <div><strong id="objectCount">0</strong><span>Objects</span></div>
-                    </div>
-            </section>section>
-      
-            <section class="summary-block">
-                    <p class="eyebrow">DETECTION SETTINGS</p>
-                    <label for="confidenceRange">Confidence: <span id="confidenceValue">55%</span></label>label>
-                    <input id="confidenceRange" type="range" min="25" max="90" value="55">
-                    <p class="hint">Higher values reduce weak detections but may miss distant objects.</p>
-            </section>section>
-      
-            <section class="summary-block latest-event">
-                    <p class="eyebrow">LATEST CROSSING</p>
-                    <p id="latestEvent">No boundary crossing recorded.</p>
-            </section>section>
-      
-            <section class="summary-block event-block">
-                    <div class="event-heading">
-                              <p class="eyebrow">LOCAL EVENT LOG</p>
-                              <button id="downloadButton" class="text-button" disabled>Download CSV</button>button>
-                    </div>
-                    <div class="event-table-wrap">
-                              <table>
-                                            <thead><tr><th>Time</th><th>Type</th><th>ID</th><th>Direction</th></tr></thead>
-                                          <tbody id="eventRows"><tr><td colspan="4" class="empty">No events yet.</td>td></tr></tbody>tbody>
-                              </table>
-                    </div>
-            </section>section>
-      </aside>aside>
-  </main>main>
-
-  <footer class="footer">
-      <span>Privacy mode: no facial recognition, no identity tracking.</span>
-      <span>For testing and demonstration; verify alerts before real-world use.</span>
-  </footer>footer>
-
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07131b" />
+  <title>Boundary Watch | AI Surveillance</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Boundary Watch home">
+        <span class="brand-mark"><span></span><span></span><span></span></span>
+        <span><strong>Boundary Watch</strong><small>AI perimeter monitor</small></span>
+      </a>
+      <div class="topbar-actions">
+        <span class="connection-pill" id="cloudStatus"><i></i>Connecting securely</span>
+        <span class="privacy-pill">Local-first privacy</span>
+      </div>
+    </header>
+
+    <main id="top" class="page-wrap">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">LIVE SECURITY CONSOLE</p>
+          <h1>Know what enters.<br /><em>Understand what leaves.</em></h1>
+          <p class="hero-copy">Monitor a defined area, capture boundary incidents, and turn every crossing into a clear analysis report.</p>
+        </div>
+        <div class="hero-meta">
+          <span class="live-dot"></span>
+          <span id="statusText" class="status">Ready to start camera</span>
+        </div>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="card camera-card">
+          <div class="card-head camera-head">
+            <div>
+              <div class="section-kicker"><span class="signal-icon"></span> Camera feed</div>
+              <h2>Live perimeter view</h2>
+              <p class="muted">Tap four points on the preview to define the monitored area.</p>
+            </div>
+            <div class="control-group">
+              <button class="button primary" id="startButton">Start camera</button>
+              <button class="button ghost" id="stopButton" disabled>Stop</button>
+            </div>
+          </div>
+          <div class="stage" id="stage">
+            <video id="video" playsinline muted></video>
+            <canvas id="overlay" aria-label="Camera preview and monitored area"></canvas>
+            <div class="stage-empty" id="stageMessage">
+              <span class="empty-camera-icon">⌁</span>
+              <strong>Camera preview will appear here</strong>
+              <small>Allow camera access to begin monitoring.</small>
+            </div>
+            <div class="stage-badge"><span class="live-dot"></span><span id="cameraBadge">STANDBY</span></div>
+          </div>
+          <div class="camera-toolbar">
+            <div class="area-instruction"><span class="number-step">1</span><span id="boundaryHint">Start the camera, then tap four corners to create an area.</span></div>
+            <button class="text-button" id="resetBoundaryButton">Reset area</button>
+          </div>
+        </article>
+
+        <aside class="side-rail">
+          <section class="card health-card">
+            <div class="card-head compact"><div><div class="section-kicker">System health</div><h2>Monitoring status</h2></div><span class="health-ring">●</span></div>
+            <div class="health-list">
+              <div><span>AI model</span><strong id="modelStatus">Not loaded</strong></div>
+              <div><span>Camera</span><strong id="cameraStatus">Stopped</strong></div>
+              <div><span>Area</span><strong id="boundaryStatus">Not set</strong></div>
+            </div>
+          </section>
+
+          <section class="metric-grid">
+            <div class="metric-card"><span class="metric-label">People</span><strong id="peopleCount">0</strong><small>in view</small></div>
+            <div class="metric-card"><span class="metric-label">Vehicles</span><strong id="carsCount">0</strong><small>in view</small></div>
+            <div class="metric-card accent-metric"><span class="metric-label">Reports</span><strong id="reportCount">0</strong><small>stored</small></div>
+          </section>
+
+          <section class="card settings-card">
+            <div class="card-head compact"><div><div class="section-kicker">Detection settings</div><h2>Confidence</h2></div><output id="confidenceValue">55%</output></div>
+            <input id="confidenceRange" type="range" min="30" max="90" value="55" />
+            <p class="hint">Raise this value to reduce weak detections in busy scenes.</p>
+            <label class="toggle-row"><input id="plateToggle" type="checkbox" checked /><span class="toggle"></span><span><b>Try plate reading</b><small>Experimental OCR for vehicle snapshots</small></span></label>
+          </section>
+
+          <section class="card latest-card">
+            <div class="card-head compact"><div><div class="section-kicker">Latest incident</div><h2>Most recent report</h2></div><span class="alert-mark">!</span></div>
+            <p id="latestEvent" class="latest-copy">No completed area session yet.</p>
+          </section>
+        </aside>
+      </section>
+
+      <section class="reports-section" id="reports">
+        <div class="reports-head">
+          <div><p class="eyebrow">INCIDENT INTELLIGENCE</p><h2>Analysis reports</h2><p class="muted">Entry, exit, dwell time, optional plate reading, and captured evidence.</p></div>
+          <div class="report-actions"><button class="button ghost" id="refreshReportButton">Refresh</button><button class="button primary" id="downloadButton" disabled>Download CSV</button></div>
+        </div>
+        <div class="report-summary-row">
+          <div><span>Retention</span><strong>60 days</strong></div>
+          <div><span>Evidence</span><strong>Entry + exit frames</strong></div>
+          <div><span>Storage</span><strong id="storageLabel">Local backup</strong></div>
+        </div>
+        <div class="card report-card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Object</th><th>Entered</th><th>Exited</th><th>Dwell</th><th>Plate / OCR</th><th>Evidence</th></tr></thead>
+              <tbody id="eventRows"><tr><td colspan="6" class="empty">No reports yet. Completed area sessions will appear here.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"><span>Boundary Watch · School perimeter prototype</span><span>Video is processed in this browser. Reports expire automatically after 60 days.</span></footer>
+  </div>
+  <dialog id="evidenceDialog" class="evidence-dialog">
+    <button class="dialog-close" id="closeEvidenceButton" aria-label="Close evidence preview">×</button>
+    <p class="eyebrow">CAPTURED EVIDENCE</p>
+    <h2 id="evidenceTitle">Boundary session</h2>
+    <div class="evidence-grid"><figure><figcaption>Entry frame</figcaption><img id="entryEvidence" alt="Entry frame" /></figure><figure><figcaption>Exit frame</figcaption><img id="exitEvidence" alt="Exit frame" /></figure></div>
+  </dialog>
   <script src="./app.js"></script>
 </body>
-</html>html></tr></th></th></tr></thead>
-                              </table></strong></p></span></h1>
-          </div>
-</body></title>
-  </head>
+</html>
